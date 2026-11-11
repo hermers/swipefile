@@ -105,11 +105,14 @@ function cleanTweetText(s: string) {
 
 function isPrivateIp(ip: string): boolean {
   const v = ip.toLowerCase().replace(/^\[|\]$/g, "");
-  if (v === "::1" || v === "::" || v.startsWith("fe80:") || /^f[cd]/.test(v)) return true;
-  const mapped = v.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
-  const v4 = mapped ? mapped[1] : v;
-  const m = v4.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
-  if (!m) return false;
+  if (v.includes(":")) {
+    // IPv6: allow only ordinary global unicast (2000::/3) that doesn't embed an IPv4 address.
+    if (!/^[23][0-9a-f]{0,3}:/.test(v)) return true; // ::, ::1, ::ffff:…, fc00::/7, fe80::/10, ff00::/8, 64:ff9b::/96
+    if (v.startsWith("2002:") || v.startsWith("2001:0:") || v.startsWith("2001::")) return true; // 6to4 / Teredo
+    return false;
+  }
+  const m = v.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+  if (!m) return true; // anything that isn't a plain dotted IPv4 is refused
   const [a, b] = [Number(m[1]), Number(m[2])];
   return a === 0 || a === 10 || a === 127 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) ||
     (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127) || a >= 224;
@@ -118,12 +121,17 @@ function isPrivateIp(ip: string): boolean {
 async function assertPublicUrl(raw: string): Promise<URL> {
   const u = new URL(raw);
   if (u.protocol !== "https:" && u.protocol !== "http:") throw new Error("blocked scheme");
-  const host = u.hostname.replace(/^\[|\]$/g, "");
-  if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".internal") || isPrivateIp(host)) {
+  const host = u.hostname;
+  // IP literals: IPv6 ones are refused outright, IPv4 ones must be public.
+  if (host.startsWith("[")) throw new Error("blocked host");
+  const isIpv4 = /^[\d.]+$/.test(host);
+  if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".internal") || (isIpv4 && isPrivateIp(host))) {
     throw new Error("blocked host");
   }
   // Resolve names too, so a public-looking name can't point inside.
-  if (!/^[\d.]+$/.test(host) && !host.includes(":")) {
+  // (Residual risk: DNS can change between this check and the fetch. Acceptable here because
+  // only the key holder can submit URLs.)
+  if (!isIpv4) {
     const addrs: string[] = [];
     for (const type of ["A", "AAAA"] as const) {
       try {
