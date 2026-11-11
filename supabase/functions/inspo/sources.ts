@@ -101,12 +101,60 @@ function cleanTweetText(s: string) {
   return s.replace(/\s*https?:\/\/t\.co\/\w+/g, "").trim() || null;
 }
 
+// ---------- safe fetching of user-supplied URLs (no internal addresses) ----------
+
+function isPrivateIp(ip: string): boolean {
+  const v = ip.toLowerCase().replace(/^\[|\]$/g, "");
+  if (v === "::1" || v === "::" || v.startsWith("fe80:") || /^f[cd]/.test(v)) return true;
+  const mapped = v.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
+  const v4 = mapped ? mapped[1] : v;
+  const m = v4.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+  if (!m) return false;
+  const [a, b] = [Number(m[1]), Number(m[2])];
+  return a === 0 || a === 10 || a === 127 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) ||
+    (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127) || a >= 224;
+}
+
+async function assertPublicUrl(raw: string): Promise<URL> {
+  const u = new URL(raw);
+  if (u.protocol !== "https:" && u.protocol !== "http:") throw new Error("blocked scheme");
+  const host = u.hostname.replace(/^\[|\]$/g, "");
+  if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".internal") || isPrivateIp(host)) {
+    throw new Error("blocked host");
+  }
+  // Resolve names too, so a public-looking name can't point inside.
+  if (!/^[\d.]+$/.test(host) && !host.includes(":")) {
+    const addrs: string[] = [];
+    for (const type of ["A", "AAAA"] as const) {
+      try {
+        addrs.push(...(await Deno.resolveDns(host, type)));
+      } catch { /* no records of this type */ }
+    }
+    if (addrs.some(isPrivateIp)) throw new Error("blocked host");
+  }
+  return u;
+}
+
+/** fetch() for URLs that came from a share: public http(s) only, every redirect re-checked. */
+export async function safeFetch(raw: string, init: RequestInit = {}, hops = 4): Promise<Response> {
+  let url = (await assertPublicUrl(raw)).toString();
+  for (let i = 0; i <= hops; i++) {
+    const res = await fetch(url, { ...init, redirect: "manual" });
+    const loc = res.headers.get("location");
+    if (res.status >= 300 && res.status < 400 && loc) {
+      url = (await assertPublicUrl(new URL(loc, url).toString())).toString();
+      continue;
+    }
+    return res;
+  }
+  throw new Error("too many redirects");
+}
+
 // For ordinary links (Dribbble, Behance, a blog post): the page's share image.
 export async function fetchOgImage(url: string): Promise<{ image: string | null; title: string | null }> {
   try {
-    const res = await fetch(url, {
+    const res = await safeFetch(url, {
       headers: { "user-agent": "Mozilla/5.0 (compatible; swipefile/0.1)", accept: "text/html" },
-      redirect: "follow",
       signal: AbortSignal.timeout(8000),
     });
     if (!res.ok) return { image: null, title: null };

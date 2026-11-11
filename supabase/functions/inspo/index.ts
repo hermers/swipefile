@@ -11,7 +11,7 @@
 //   GET    /health
 // Every route needs the x-swipefile-key header.
 import { createClient } from "npm:@supabase/supabase-js@2.119.0";
-import { fetchOgImage, fetchTweet, imageSize, parseShared, sniffType } from "./sources.ts";
+import { fetchOgImage, fetchTweet, imageSize, parseShared, safeFetch, sniffType } from "./sources.ts";
 import { tagImages } from "./tagger.ts";
 
 const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
@@ -62,7 +62,7 @@ async function storeBytes(itemId: string, bytes: Uint8Array, hint?: { width?: nu
 }
 
 async function storeRemote(itemId: string, url: string, hint?: { width?: number; height?: number }) {
-  const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
+  const res = await safeFetch(url, { signal: AbortSignal.timeout(15000) });
   if (!res.ok) return null;
   return storeBytes(itemId, new Uint8Array(await res.arrayBuffer()), hint);
 }
