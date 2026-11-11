@@ -143,11 +143,21 @@ async function save(req: Request) {
     if (typeof t === "string") text = t;
     const f = form.get("file") ?? form.get("image");
     if (f instanceof File && f.size > 0) file = new Uint8Array(await f.arrayBuffer());
-  } else if (type.startsWith("image/")) {
-    file = new Uint8Array(await req.arrayBuffer());
   } else {
-    const body = await req.json().catch(() => ({}));
-    text = body.text ?? body.url ?? null;
+    // Raw body: an image (the image Shortcut sends the file itself), JSON {text}, or plain text.
+    // Judge by the bytes, not the label: Shortcuts doesn't always set the content type.
+    const bytes = new Uint8Array(await req.arrayBuffer());
+    if (sniffType(bytes)) {
+      file = bytes;
+    } else {
+      const raw = new TextDecoder().decode(bytes);
+      try {
+        const body = JSON.parse(raw);
+        text = body.text ?? body.url ?? null;
+      } catch {
+        text = raw || null;
+      }
+    }
   }
 
   // A screenshot (optionally with a link alongside it)

@@ -7,3 +7,4 @@ supabase/.branches
 .env.development.local
 .claude/settings.local.json
 SETUP.local.md
+shortcuts/

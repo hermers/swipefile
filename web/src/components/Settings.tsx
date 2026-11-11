@@ -119,7 +119,8 @@ export function SettingsSheet() {
               <section style={{ display: "grid", gap: 12 }}>
                 <p className="section-label" style={{ margin: 0 }}>Save from your iPhone</p>
                 <p style={{ color: "var(--text-2)", fontSize: "var(--t-sm)" }}>
-                  Make 2 small shortcuts once, about 3 minutes. After that, tap Share on any post, then Swipefile.
+                  Easiest: on your Mac, run <strong style={{ color: "var(--text)" }}>tools/make_shortcuts.py</strong> and open
+                  the 2 files it makes. They sync to your iPhone through iCloud. To build them by hand instead, about 3 minutes:
                 </p>
                 <p className="section-label" style={{ margin: "4px 0 0" }}>Shortcut 1 · links from X and Instagram</p>
                 <ol className="steps">
@@ -148,8 +149,8 @@ export function SettingsSheet() {
                     At the top, add <strong>Convert Image</strong>: Shortcut Input to <strong>JPEG</strong>.
                   </li>
                   <li>
-                    In <strong>Get Contents of URL</strong>, change Request Body to <strong>Form</strong> with a
-                    <strong> File</strong> field <strong>file</strong> = <strong>Converted Image</strong>.
+                    In <strong>Get Contents of URL</strong>, change Request Body to <strong>File</strong> and set it to
+                    <strong> Converted Image</strong>.
                   </li>
                 </ol>
                 <p style={{ color: "var(--text-2)", fontSize: "var(--t-sm)" }}>

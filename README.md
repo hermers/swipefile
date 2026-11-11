@@ -39,4 +39,8 @@ npm --prefix web run dev
 ## Not built yet
 
 - Automatic X bookmark sync. It needs an X developer account with pay-per-use credits and OAuth 2.0 user login.
-- A one-tap installable Shortcut file. For now, the steps are in the app under Settings.
+
+
+## iPhone shortcuts
+
+`python3 tools/make_shortcuts.py` builds signed **Swipefile** (links) and **Swipefile image** (screenshots) files in `shortcuts/` (gitignored, since they contain your key). Open them on the Mac, click Add Shortcut, and they sync to the iPhone through iCloud.
