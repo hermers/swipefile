@@ -12,7 +12,7 @@ Saved design references from Instagram and X, in one place you actually come bac
 |---|---|---|
 | `supabase/functions/inspo` | Supabase Edge Function | The one API. Takes shares, pulls images from X posts, stores them, asks Claude for tags |
 | `supabase/migrations` | Supabase Postgres | `items` table + private `media` bucket. RLS on, no policies: only the function can read or write |
-| `web/` | GitHub Pages | The gallery (Vite + React). Installable to the Home Screen |
+| `web/` | Vercel (`./deploy-web.sh`) | The gallery (Vite + React). Installable to the Home Screen |
 
 Every request needs the `x-swipefile-key` header. The key lives in `.env.local` (gitignored) and in your Shortcut.
 
