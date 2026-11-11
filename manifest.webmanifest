@@ -1,0 +1,14 @@
+{
+  "name": "Swipefile",
+  "short_name": "Swipefile",
+  "description": "Your saved design references from Instagram and X, in one place.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#171513",
+  "theme_color": "#171513",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}
