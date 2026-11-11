@@ -10,8 +10,9 @@ export function Setup() {
 
   async function connect(e: FormEvent) {
     e.preventDefault();
-    // Accept the key itself or the whole setup link (…#key=abc).
-    const k = value.trim().match(/key=([a-f0-9]{16,})/i)?.[1] ?? value.trim();
+    // Accept the key, the setup link, or any pasted text that contains the 64-character key.
+    const raw = value.trim();
+    const k = raw.match(/key=([a-f0-9]{16,})/i)?.[1] ?? raw.match(/[a-f0-9]{64}/i)?.[0] ?? raw.replace(/\s+/g, "");
     if (!k) {
       setError("Paste your key or setup link to connect.");
       return;
@@ -26,7 +27,7 @@ export function Setup() {
       setApiKey("");
       setError(
         err instanceof ApiError && err.status === 401
-          ? "That key didn't work. Check it and try again."
+          ? "That key didn't work. Copy the whole setup link from SETUP.local.md and paste it here."
           : err instanceof Error ? err.message : "Couldn't connect. Try again.",
       );
     } finally {
@@ -51,9 +52,13 @@ export function Setup() {
           inputMode="url"
           autoComplete="off"
           autoCapitalize="off"
+          autoCorrect="off"
           spellCheck={false}
           value={value}
-          onChange={(e) => setValue(e.target.value)}
+          onChange={(e) => {
+            setValue(e.target.value);
+            if (error) setError(null);
+          }}
           aria-invalid={Boolean(error)}
           aria-describedby="key-help"
         />
