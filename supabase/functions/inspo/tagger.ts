@@ -2,7 +2,8 @@
 // so "onboarding" or "pricing" finds things months later.
 import Anthropic from "npm:@anthropic-ai/sdk@1.8.0";
 
-export const TAG_MODEL = "claude-opus-5-5";
+// Haiku 5.5: a few cents per 100 images. (Opus 5.5 would be roughly $1–3 per 100.)
+export const TAG_MODEL = "claude-haiku-5-5";
 
 // A shared starting vocabulary keeps tags consistent ("pricing" not "pricing-page", "prices").
 const VOCAB = [
@@ -41,7 +42,7 @@ export async function tagImages(
   const client = new Anthropic();
   const vocab = Array.from(new Set([...knownTags, ...VOCAB])).slice(0, 150);
 
-  const content: Anthropic.Beta.BetaContentBlockParam[] = imageUrls.slice(0, 4).map((url) => ({
+  const content: Anthropic.ContentBlockParam[] = imageUrls.slice(0, 4).map((url) => ({
     type: "image",
     source: { type: "url", url },
   }));
@@ -60,11 +61,10 @@ export async function tagImages(
   });
 
   try {
-    const res = await client.beta.messages.create({
+    // Haiku 5.5 has no server-side refusal fallback; a refusal just means no tags for that image.
+    const res = await client.messages.create({
       model: TAG_MODEL,
       max_tokens: 8000, // thinking counts toward this; too low and the JSON gets cut off
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
       output_config: { effort: "low", format: { type: "json_schema", schema: SCHEMA } },
       messages: [{ role: "user", content }],
     });
