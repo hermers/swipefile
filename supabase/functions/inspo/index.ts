@@ -350,7 +350,12 @@ Deno.serve(async (req) => {
   const [a, b, c] = i >= 0 ? parts.slice(i + 1) : parts;
 
   try {
-    if (a === "health") return json({ ok: true, tagging: Boolean(Deno.env.get("ANTHROPIC_API_KEY")) });
+    if (a === "health") {
+      // Touches the database too, so the daily ping counts as real activity and the free project stays awake.
+      const { count, error } = await db.from("items").select("id", { count: "exact", head: true });
+      if (error) return fail(503, "The database isn't answering.");
+      return json({ ok: true, tagging: Boolean(Deno.env.get("ANTHROPIC_API_KEY")), saves: count ?? 0 });
+    }
     if (a === "save" && req.method === "POST") return await save(req);
     if (a === "items" && !b && req.method === "GET") return await list(url);
     if (a === "tags") return await tags();
