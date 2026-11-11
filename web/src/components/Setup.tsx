@@ -10,9 +10,10 @@ export function Setup() {
 
   async function connect(e: FormEvent) {
     e.preventDefault();
-    const k = value.trim();
+    // Accept the key itself or the whole setup link (…#key=abc).
+    const k = value.trim().match(/key=([a-f0-9]{16,})/i)?.[1] ?? value.trim();
     if (!k) {
-      setError("Enter your key to connect.");
+      setError("Paste your key or setup link to connect.");
       return;
     }
     setBusy(true);
@@ -42,11 +43,12 @@ export function Setup() {
         <p className="lede">Your saves from Instagram and X, in one place you'll actually come back to.</p>
       </div>
       <form className="field" onSubmit={connect} noValidate>
-        <label htmlFor="key">Key</label>
+        <label htmlFor="key">Key or setup link</label>
         <input
           id="key"
           className="input"
-          type="password"
+          type="text"
+          inputMode="url"
           autoComplete="off"
           autoCapitalize="off"
           spellCheck={false}
@@ -58,7 +60,7 @@ export function Setup() {
         {error ? (
           <p id="key-help" className="error" role="alert">{error}</p>
         ) : (
-          <p id="key-help" className="hint">It's in SETUP.local.md on your Mac. Opening the setup link there fills it in for you.</p>
+          <p id="key-help" className="hint">Both are in SETUP.local.md on your Mac. You only need to do this once per device.</p>
         )}
         <button className="btn btn-primary btn-wide" type="submit" disabled={busy} style={{ marginTop: 12 }}>
           {busy ? <span className="spinner" aria-label="Connecting" /> : "Connect"}

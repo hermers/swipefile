@@ -62,13 +62,16 @@ export async function tagImages(
   try {
     const res = await client.beta.messages.create({
       model: TAG_MODEL,
-      max_tokens: 2000,
+      max_tokens: 8000, // thinking counts toward this; too low and the JSON gets cut off
       betas: ["server-side-fallback-2026-07-01"],
       fallbacks: "default",
       output_config: { effort: "low", format: { type: "json_schema", schema: SCHEMA } },
       messages: [{ role: "user", content }],
     });
-    if (res.stop_reason === "refusal") return null;
+    if (res.stop_reason !== "end_turn") {
+      console.error(`tagger: stopped with ${res.stop_reason}`);
+      if (res.stop_reason === "refusal" || res.stop_reason === "max_tokens") return null;
+    }
     const text = res.content.find((b) => b.type === "text");
     if (!text || text.type !== "text") return null;
     const parsed = JSON.parse(text.text) as TagResult;

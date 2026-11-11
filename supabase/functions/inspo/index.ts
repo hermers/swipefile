@@ -29,7 +29,8 @@ const cors = {
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "content-type": "application/json" } });
-const fail = (status: number, error: string) => json({ error }, status);
+// `message` too, so the Shortcut's notification explains a failure instead of showing nothing.
+const fail = (status: number, error: string) => json({ error, message: error }, status);
 
 type Img = { path: string; width?: number; height?: number };
 type Item = Record<string, unknown> & { id: string; images: Img[] };
@@ -220,6 +221,12 @@ async function list(url: URL) {
   const before = url.searchParams.get("before");
   const limit = Math.min(Number(url.searchParams.get("limit") ?? 40), 100);
 
+  // A save still "processing" after 2 minutes means its background work died. Say so instead of spinning forever.
+  await db.from("items")
+    .update({ status: "error", error: "Couldn't load this post. Add a screenshot instead." })
+    .eq("status", "processing")
+    .lt("created_at", new Date(Date.now() - 2 * 60 * 1000).toISOString());
+
   let query = db.from("items").select("*").order("created_at", { ascending: false }).limit(limit);
   query = query.eq("archived", filter === "archived");
   if (filter === "starred") query = query.eq("starred", true);
@@ -228,9 +235,7 @@ async function list(url: URL) {
   if (before) query = query.lt("created_at", before);
   if (q) {
     const words = q.split(/\s+/).slice(0, 5);
-    for (const w of words) {
-      query = query.or(`body.ilike.%${w}%,summary.ilike.%${w}%,author.ilike.%${w}%,tags.cs.{${w.toLowerCase()}}`);
-    }
+    for (const w of words) query = query.ilike("search", `%${w.toLowerCase()}%`);
   }
   const { data, error } = await query;
   if (error) return fail(500, error.message);

@@ -176,9 +176,21 @@ export function SettingsSheet() {
                     </button>
                   </div>
                 </div>
-                <p style={{ color: "var(--text-3)", fontSize: "var(--t-xs)" }}>
-                  Tip: in Safari, tap Share, then Add to Home Screen, so Swipefile opens like an app.
+              </section>
+
+              <section style={{ display: "grid", gap: 10 }}>
+                <p className="section-label" style={{ margin: 0 }}>A daily nudge</p>
+                <p style={{ color: "var(--text-2)", fontSize: "var(--t-sm)" }}>
+                  Today's 5 only works if you open it. In <strong style={{ color: "var(--text)" }}>Reminders</strong>, add
+                  “Look at Today's 5”, set it to repeat <strong style={{ color: "var(--text)" }}>Daily</strong> at a calm time,
+                  and paste this address as its URL. Tapping the reminder opens Swipefile.
                 </p>
+                <div className="copy-row">
+                  <span>{location.origin + location.pathname}</span>
+                  <button className="btn btn-quiet" onClick={() => copy(location.origin + location.pathname, "Address")}>
+                    <Copy size={14} aria-hidden /> Copy
+                  </button>
+                </div>
               </section>
 
               <div className="divider" />
